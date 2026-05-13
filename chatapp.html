@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pulse — Chat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0d0f;
+    --bg2: #141417;
+    --bg3: #1c1c21;
+    --bg4: #242429;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8e8f0;
+    --text2: #8888a0;
+    --text3: #5a5a70;
+    --accent: #7c6af7;
+    --accent2: #9b8df9;
+    --accent-bg: rgba(124,106,247,0.15);
+    --green: #3ecf74;
+    --green-bg: rgba(62,207,116,0.12);
+    --red: #f75a5a;
+    --amber: #f7a234;
+    --r: 10px;
+    --r2: 14px;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+    font-size: 14px;
+  }
+
+  /* ── AUTH SCREEN ── */
+  #auth-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(124,106,247,0.12) 0%, transparent 70%), var(--bg);
+  }
+  .auth-box {
+    width: 360px;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    padding: 40px 36px;
+  }
+  .auth-logo {
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+    margin-bottom: 4px;
+  }
+  .auth-logo span { color: var(--accent2); }
+  .auth-sub { color: var(--text2); font-size: 13px; margin-bottom: 28px; }
+  .auth-tabs { display: flex; gap: 4px; background: var(--bg3); border-radius: 8px; padding: 3px; margin-bottom: 24px; }
+  .auth-tab {
+    flex: 1; text-align: center; padding: 7px; border-radius: 6px; cursor: pointer;
+    font-size: 13px; font-weight: 500; color: var(--text2); transition: all .15s;
+  }
+  .auth-tab.active { background: var(--bg4); color: var(--text); }
+  .auth-field { margin-bottom: 14px; }
+  .auth-field label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 6px; font-weight: 500; }
+  .auth-field input {
+    width: 100%; background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 12px; color: var(--text); font-size: 14px;
+    font-family: inherit; outline: none; transition: border-color .15s;
+  }
+  .auth-field input:focus { border-color: var(--accent); }
+  .auth-btn {
+    width: 100%; padding: 11px; background: var(--accent); border: none; border-radius: 8px;
+    color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 8px;
+    font-family: inherit; transition: opacity .15s;
+  }
+  .auth-btn:hover { opacity: 0.88; }
+  .auth-error { color: var(--red); font-size: 12px; margin-top: 8px; text-align: center; min-height: 16px; }
+
+  /* ── MAIN APP ── */
+  #app { display: none; height: 100vh; flex-direction: column; }
+  #app.visible { display: flex; }
+
+  .app-layout { display: flex; flex: 1; overflow: hidden; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 260px; min-width: 260px; background: var(--bg2); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .sidebar-header {
+    padding: 18px 16px 12px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .sidebar-logo { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
+  .sidebar-logo span { color: var(--accent2); }
+  .user-chip {
+    display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+    background: var(--bg3); border-radius: 8px; margin: 10px 12px;
+    cursor: pointer; border: 1px solid var(--border);
+  }
+  .avatar {
+    width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0;
+    text-transform: uppercase;
+  }
+  .avatar.lg { width: 38px; height: 38px; font-size: 14px; }
+  .avatar.xl { width: 48px; height: 48px; font-size: 16px; }
+  .user-chip-name { font-size: 13px; font-weight: 500; flex: 1; }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+
+  .sidebar-nav { padding: 8px 8px 0; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px;
+    cursor: pointer; color: var(--text2); font-size: 13px; font-weight: 500;
+    transition: all .12s; position: relative; margin-bottom: 2px;
+  }
+  .nav-item:hover { background: var(--bg3); color: var(--text); }
+  .nav-item.active { background: var(--accent-bg); color: var(--accent2); }
+  .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .badge {
+    margin-left: auto; background: var(--accent); color: #fff; font-size: 10px;
+    font-weight: 700; min-width: 18px; height: 18px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center; padding: 0 4px;
+  }
+  .badge.green { background: var(--green); }
+
+  .sidebar-section { padding: 16px 12px 6px; }
+  .sidebar-section-title {
+    font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase;
+    letter-spacing: 0.8px; margin-bottom: 6px; display: flex; align-items: center;
+    justify-content: space-between;
+  }
+  .icon-btn {
+    background: none; border: none; color: var(--text3); cursor: pointer; padding: 2px;
+    border-radius: 4px; transition: color .12s; display: flex; align-items: center;
+  }
+  .icon-btn:hover { color: var(--text2); }
+  .icon-btn svg { width: 14px; height: 14px; }
+
+  .dm-list, .group-list { overflow-y: auto; flex: 1; }
+  .conv-item {
+    display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 8px;
+    cursor: pointer; transition: background .1s; margin: 0 4px 1px;
+  }
+  .conv-item:hover { background: var(--bg3); }
+  .conv-item.active { background: var(--accent-bg); }
+  .conv-info { flex: 1; min-width: 0; }
+  .conv-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .conv-preview { font-size: 11px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+  .conv-time { font-size: 10px; color: var(--text3); flex-shrink: 0; }
+  .unread-badge {
+    background: var(--accent); width: 16px; height: 16px; border-radius: 50%;
+    font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+    color: #fff; flex-shrink: 0;
+  }
+
+  .sidebar-scrollable { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+  .sidebar-scrollable::-webkit-scrollbar { width: 4px; }
+  .sidebar-scrollable::-webkit-scrollbar-track { background: transparent; }
+  .sidebar-scrollable::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* ── MAIN PANEL ── */
+  .main-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ── CHAT HEADER ── */
+  .chat-header {
+    padding: 0 20px; height: 56px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+    background: var(--bg2);
+  }
+  .chat-header-name { font-size: 15px; font-weight: 600; }
+  .chat-header-sub { font-size: 12px; color: var(--text2); margin-top: 1px; }
+  .chat-header-actions { margin-left: auto; display: flex; gap: 8px; }
+  .header-btn {
+    background: none; border: none; color: var(--text2); cursor: pointer;
+    padding: 6px; border-radius: 6px; display: flex; align-items: center;
+    transition: all .12s;
+  }
+  .header-btn:hover { background: var(--bg3); color: var(--text); }
+  .header-btn svg { width: 18px; height: 18px; }
+
+  /* ── MESSAGES ── */
+  .messages-area {
+    flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 2px;
+  }
+  .messages-area::-webkit-scrollbar { width: 4px; }
+  .messages-area::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .msg-group { margin-bottom: 14px; }
+  .msg-header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+  .msg-author { font-size: 13px; font-weight: 600; }
+  .msg-time { font-size: 11px; color: var(--text3); }
+  .msg-bubble {
+    display: inline-block; max-width: 70%; padding: 9px 13px; border-radius: 12px;
+    font-size: 14px; line-height: 1.5; word-break: break-word;
+  }
+  .msg-mine .msg-bubble { background: var(--accent); color: #fff; border-radius: 12px 12px 3px 12px; }
+  .msg-other .msg-bubble { background: var(--bg3); color: var(--text); border-radius: 12px 12px 12px 3px; }
+  .msg-mine { display: flex; flex-direction: column; align-items: flex-end; }
+  .msg-other { display: flex; flex-direction: column; align-items: flex-start; }
+  .msg-mine .msg-header { flex-direction: row-reverse; }
+  .msg-row { display: flex; gap: 10px; align-items: flex-start; }
+  .msg-other .msg-row { flex-direction: row; }
+  .msg-mine .msg-row { flex-direction: row-reverse; }
+
+  /* ── INPUT ── */
+  .input-area {
+    padding: 14px 20px; border-top: 1px solid var(--border); background: var(--bg2); flex-shrink: 0;
+  }
+  .input-box {
+    display: flex; align-items: center; gap: 10px; background: var(--bg3);
+    border: 1px solid var(--border2); border-radius: 12px; padding: 8px 14px;
+    transition: border-color .15s;
+  }
+  .input-box:focus-within { border-color: var(--accent); }
+  .input-box input {
+    flex: 1; background: none; border: none; color: var(--text); font-size: 14px;
+    font-family: inherit; outline: none;
+  }
+  .input-box input::placeholder { color: var(--text3); }
+  .send-btn {
+    background: var(--accent); border: none; color: #fff; width: 32px; height: 32px;
+    border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: opacity .12s; flex-shrink: 0;
+  }
+  .send-btn:hover { opacity: 0.85; }
+  .send-btn:disabled { opacity: 0.35; cursor: default; }
+  .send-btn svg { width: 16px; height: 16px; }
+
+  /* ── PANEL VIEWS ── */
+  .panel { flex: 1; overflow-y: auto; padding: 28px 32px; }
+  .panel h2 { font-size: 20px; font-weight: 600; margin-bottom: 6px; letter-spacing: -0.3px; }
+  .panel-sub { color: var(--text2); font-size: 13px; margin-bottom: 24px; }
+
+  /* search bar */
+  .search-bar {
+    display: flex; gap: 8px; margin-bottom: 20px;
+  }
+  .search-bar input {
+    flex: 1; background: var(--bg3); border: 1px solid var(--border); border-radius: 8px;
+    padding: 9px 12px; color: var(--text); font-size: 14px; font-family: inherit;
+    outline: none; transition: border-color .15s;
+  }
+  .search-bar input:focus { border-color: var(--accent); }
+  .btn {
+    padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: inherit; border: none; transition: opacity .12s;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-ghost { background: var(--bg3); border: 1px solid var(--border2); color: var(--text2); }
+  .btn-ghost:hover { background: var(--bg4); color: var(--text); }
+  .btn-danger { background: rgba(247,90,90,0.12); color: var(--red); border: 1px solid rgba(247,90,90,0.2); }
+  .btn-danger:hover { background: rgba(247,90,90,0.2); }
+  .btn-success { background: var(--green-bg); color: var(--green); border: 1px solid rgba(62,207,116,0.2); }
+  .btn-success:hover { background: rgba(62,207,116,0.2); }
+  .btn-sm { padding: 5px 12px; font-size: 12px; }
+
+  .user-card {
+    display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+    background: var(--bg3); border-radius: 10px; border: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+  .user-card-info { flex: 1; }
+  .user-card-name { font-size: 14px; font-weight: 500; }
+  .user-card-meta { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .user-card-actions { display: flex; gap: 6px; }
+
+  /* group modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal {
+    background: var(--bg2); border: 1px solid var(--border2); border-radius: 16px;
+    padding: 28px; width: 400px; max-height: 80vh; overflow-y: auto;
+  }
+  .modal h3 { font-size: 17px; font-weight: 600; margin-bottom: 16px; }
+  .modal-field { margin-bottom: 14px; }
+  .modal-field label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 6px; font-weight: 500; }
+  .modal-field input {
+    width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: 8px;
+    padding: 9px 12px; color: var(--text); font-size: 14px; font-family: inherit; outline: none;
+    transition: border-color .15s;
+  }
+  .modal-field input:focus { border-color: var(--accent); }
+  .member-checkbox {
+    display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+    border-radius: 8px; cursor: pointer; transition: background .1s;
+  }
+  .member-checkbox:hover { background: var(--bg3); }
+  .member-checkbox input[type=checkbox] { accent-color: var(--accent); width: 15px; height: 15px; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+
+  /* welcome screen */
+  .welcome {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: var(--text3); gap: 10px;
+  }
+  .welcome svg { width: 48px; height: 48px; opacity: 0.3; }
+  .welcome p { font-size: 14px; }
+
+  /* empty states */
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    padding: 40px 20px; color: var(--text3); text-align: center;
+  }
+  .empty-state svg { width: 40px; height: 40px; opacity: 0.25; }
+  .empty-state p { font-size: 13px; }
+
+  /* tabs in panels */
+  .panel-tabs { display: flex; gap: 4px; background: var(--bg3); border-radius: 8px; padding: 3px; margin-bottom: 20px; width: fit-content; }
+  .panel-tab {
+    padding: 6px 16px; border-radius: 6px; font-size: 13px; font-weight: 500;
+    color: var(--text2); cursor: pointer; transition: all .12s;
+  }
+  .panel-tab.active { background: var(--bg4); color: var(--text); }
+
+  .tag {
+    display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 6px;
+    font-size: 11px; font-weight: 600;
+  }
+  .tag-green { background: var(--green-bg); color: var(--green); }
+  .tag-amber { background: rgba(247,162,52,0.12); color: var(--amber); }
+  .tag-accent { background: var(--accent-bg); color: var(--accent2); }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+  /* notification toast */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; background: var(--bg2);
+    border: 1px solid var(--border2); border-radius: 10px; padding: 12px 18px;
+    font-size: 13px; color: var(--text); z-index: 200; box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    transform: translateY(80px); opacity: 0; transition: all .25s; max-width: 280px;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* scrollbars */
+  .panel::-webkit-scrollbar { width: 4px; }
+  .panel::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">Pulse<span>.</span></div>
+    <div class="auth-sub">Connect with friends, instantly.</div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchAuthTab('login')">Sign in</div>
+      <div class="auth-tab" onclick="switchAuthTab('register')">Create account</div>
+    </div>
+    <div id="login-form">
+      <div class="auth-field">
+        <label>Username</label>
+        <input id="login-user" type="text" placeholder="your username" autocomplete="username">
+      </div>
+      <div class="auth-field">
+        <label>Password</label>
+        <input id="login-pass" type="password" placeholder="••••••••">
+      </div>
+      <button class="auth-btn" onclick="login()">Sign in</button>
+    </div>
+    <div id="register-form" style="display:none">
+      <div class="auth-field">
+        <label>Display name</label>
+        <input id="reg-name" type="text" placeholder="e.g. Alex Chen">
+      </div>
+      <div class="auth-field">
+        <label>Username</label>
+        <input id="reg-user" type="text" placeholder="unique username">
+      </div>
+      <div class="auth-field">
+        <label>Password</label>
+        <input id="reg-pass" type="password" placeholder="at least 4 characters">
+      </div>
+      <button class="auth-btn" onclick="register()">Create account</button>
+    </div>
+    <div class="auth-error" id="auth-error"></div>
+    <div style="margin-top:16px; font-size:11px; color:var(--text3); text-align:center;">
+      Demo accounts: alice / pass, bob / pass, carol / pass
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <div class="app-layout">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">Pulse<span>.</span></div>
+      </div>
+      <div class="user-chip" onclick="showPanel('profile')">
+        <div class="avatar" id="sb-avatar" style="background:#7c6af7;color:#fff">--</div>
+        <div class="user-chip-name" id="sb-name">--</div>
+        <div class="status-dot"></div>
+      </div>
+      <div class="sidebar-nav">
+        <div class="nav-item active" id="nav-friends" onclick="showPanel('friends')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Friends
+          <div class="badge" id="fr-badge" style="display:none">0</div>
+        </div>
+        <div class="nav-item" id="nav-explore" onclick="showPanel('explore')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Find People
+        </div>
+      </div>
+
+      <div class="sidebar-scrollable">
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">
+            Direct Messages
+            <button class="icon-btn" onclick="showPanel('friends')" title="New DM">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+          </div>
+          <div id="dm-list"></div>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">
+            Group Chats
+            <button class="icon-btn" onclick="openNewGroupModal()" title="New Group">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+          </div>
+          <div id="group-list"></div>
+        </div>
+      </div>
+
+      <div style="padding: 12px; border-top: 1px solid var(--border);">
+        <div class="nav-item" onclick="logout()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sign out
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN PANEL -->
+    <div class="main-panel" id="main-panel">
+      <!-- dynamically filled -->
+    </div>
+  </div>
+</div>
+
+<!-- NEW GROUP MODAL -->
+<div id="group-modal" style="display:none">
+  <div class="modal-overlay" onclick="closeGroupModal()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <h3>Create Group Chat</h3>
+      <div class="modal-field">
+        <label>Group name</label>
+        <input id="group-name-input" type="text" placeholder="e.g. Weekend crew">
+      </div>
+      <div class="modal-field">
+        <label>Add members from friends</label>
+        <div id="group-member-list"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeGroupModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="createGroup()">Create</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────
+const DB = {
+  users: [
+    { id: 'u1', username: 'alice', name: 'Alice Kim', password: 'pass', color: '#7c6af7' },
+    { id: 'u2', username: 'bob', name: 'Bob Marsh', password: 'pass', color: '#3ecf74' },
+    { id: 'u3', username: 'carol', name: 'Carol Sun', password: 'pass', color: '#f7a234' },
+    { id: 'u4', username: 'dave', name: 'Dave Osei', password: 'pass', color: '#f75a5a' },
+    { id: 'u5', username: 'eva', name: 'Eva Lind', password: 'pass', color: '#5ab8f7' },
+  ],
+  friendRequests: [
+    { id: 'fr1', from: 'u2', to: 'u1', status: 'pending' },
+    { id: 'fr2', from: 'u3', to: 'u1', status: 'pending' },
+  ],
+  friends: [
+    { users: ['u1', 'u4'] },
+    { users: ['u2', 'u3'] },
+  ],
+  dms: [
+    {
+      id: 'dm-u1-u4', users: ['u1', 'u4'],
+      messages: [
+        { id: 'm1', from: 'u4', text: 'Hey! What\'s up?', ts: Date.now() - 3600000 },
+        { id: 'm2', from: 'u1', text: 'Not much, you?', ts: Date.now() - 3500000 },
+        { id: 'm3', from: 'u4', text: 'Just chilling. Wanna game later?', ts: Date.now() - 1800000 },
+      ]
+    },
+  ],
+  groups: [
+    {
+      id: 'g1', name: 'Gaming Squad', members: ['u1', 'u2', 'u3'],
+      color: '#7c6af7',
+      messages: [
+        { id: 'gm1', from: 'u2', text: 'Who\'s on tonight?', ts: Date.now() - 7200000 },
+        { id: 'gm2', from: 'u3', text: 'Me! 9pm works?', ts: Date.now() - 7100000 },
+        { id: 'gm3', from: 'u1', text: 'I\'ll be there 🎮', ts: Date.now() - 7000000 },
+      ]
+    }
+  ]
+};
+
+let currentUser = null;
+let currentChat = null; // { type: 'dm'|'group', id: string }
+let currentPanel = 'friends';
+
+// ─── HELPERS ─────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const getUser = id => DB.users.find(u => u.id === id);
+const getUsername = id => getUser(id)?.name || 'Unknown';
+
+function avatarHTML(userId, size = '') {
+  const u = getUser(userId);
+  if (!u) return '';
+  const initials = u.name.split(' ').map(w => w[0]).join('').slice(0, 2);
+  return `<div class="avatar ${size}" style="background:${u.color}20;color:${u.color}">${initials}</div>`;
+}
+
+function groupAvatarHTML(group, size = '') {
+  return `<div class="avatar ${size}" style="background:${group.color}20;color:${group.color}">${group.name[0]}</div>`;
+}
+
+function fmtTime(ts) {
+  const d = new Date(ts);
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) {
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
+function showToast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+function areFriends(uid1, uid2) {
+  return DB.friends.some(f => f.users.includes(uid1) && f.users.includes(uid2));
+}
+
+function getDM(uid1, uid2) {
+  return DB.dms.find(d => d.users.includes(uid1) && d.users.includes(uid2));
+}
+
+function getOrCreateDM(uid1, uid2) {
+  let dm = getDM(uid1, uid2);
+  if (!dm) {
+    dm = { id: `dm-${uid1}-${uid2}`, users: [uid1, uid2], messages: [] };
+    DB.dms.push(dm);
+  }
+  return dm;
+}
+
+function getPendingRequests() {
+  return DB.friendRequests.filter(r => r.to === currentUser.id && r.status === 'pending');
+}
+
+// ─── AUTH ─────────────────────────────────────────────────────────────
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((el, i) => {
+    el.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'register'));
+  });
+  $('login-form').style.display = tab === 'login' ? '' : 'none';
+  $('register-form').style.display = tab === 'register' ? '' : 'none';
+  $('auth-error').textContent = '';
+}
+
+function login() {
+  const user = $('login-user').value.trim().toLowerCase();
+  const pass = $('login-pass').value;
+  const found = DB.users.find(u => u.username === user && u.password === pass);
+  if (!found) { $('auth-error').textContent = 'Invalid username or password.'; return; }
+  currentUser = found;
+  startApp();
+}
+
+function register() {
+  const name = $('reg-name').value.trim();
+  const user = $('reg-user').value.trim().toLowerCase();
+  const pass = $('reg-pass').value;
+  if (!name || !user || pass.length < 4) { $('auth-error').textContent = 'Please fill all fields (password ≥ 4 chars).'; return; }
+  if (DB.users.find(u => u.username === user)) { $('auth-error').textContent = 'Username already taken.'; return; }
+  const colors = ['#7c6af7','#3ecf74','#f7a234','#f75a5a','#5ab8f7','#e55fc5','#44cfcb'];
+  const newUser = { id: `u${Date.now()}`, username: user, name, password: pass, color: colors[DB.users.length % colors.length] };
+  DB.users.push(newUser);
+  currentUser = newUser;
+  startApp();
+}
+
+function logout() {
+  currentUser = null; currentChat = null;
+  $('app').classList.remove('visible');
+  $('auth-screen').style.display = 'flex';
+  $('login-user').value = ''; $('login-pass').value = '';
+}
+
+function startApp() {
+  $('auth-screen').style.display = 'none';
+  $('app').classList.add('visible');
+  updateSidebarUser();
+  renderSidebar();
+  showPanel('friends');
+}
+
+// ─── SIDEBAR ──────────────────────────────────────────────────────────
+function updateSidebarUser() {
+  const u = currentUser;
+  const initials = u.name.split(' ').map(w => w[0]).join('').slice(0,2);
+  $('sb-avatar').textContent = initials;
+  $('sb-avatar').style.background = u.color + '20';
+  $('sb-avatar').style.color = u.color;
+  $('sb-name').textContent = u.name;
+}
+
+function renderSidebar() {
+  renderDMList();
+  renderGroupList();
+  // friend request badge
+  const pending = getPendingRequests().length;
+  const badge = $('fr-badge');
+  badge.textContent = pending;
+  badge.style.display = pending > 0 ? 'flex' : 'none';
+}
+
+function renderDMList() {
+  const el = $('dm-list');
+  const myDMs = DB.dms.filter(d => d.users.includes(currentUser.id));
+  if (!myDMs.length) { el.innerHTML = `<div style="padding:4px 10px;font-size:12px;color:var(--text3)">No DMs yet</div>`; return; }
+  el.innerHTML = myDMs.map(dm => {
+    const otherId = dm.users.find(u => u !== currentUser.id);
+    const other = getUser(otherId);
+    const last = dm.messages[dm.messages.length - 1];
+    const isActive = currentChat?.type === 'dm' && currentChat.id === dm.id;
+    return `<div class="conv-item${isActive ? ' active' : ''}" onclick="openDM('${dm.id}')">
+      ${avatarHTML(otherId)}
+      <div class="conv-info">
+        <div class="conv-name">${other?.name || 'User'}</div>
+        <div class="conv-preview">${last ? last.text.slice(0, 28) + (last.text.length > 28 ? '…' : '') : 'Say hello!'}</div>
+      </div>
+      ${last ? `<div class="conv-time">${fmtTime(last.ts)}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function renderGroupList() {
+  const el = $('group-list');
+  const myGroups = DB.groups.filter(g => g.members.includes(currentUser.id));
+  if (!myGroups.length) { el.innerHTML = `<div style="padding:4px 10px;font-size:12px;color:var(--text3)">No groups yet</div>`; return; }
+  el.innerHTML = myGroups.map(g => {
+    const last = g.messages[g.messages.length - 1];
+    const isActive = currentChat?.type === 'group' && currentChat.id === g.id;
+    return `<div class="conv-item${isActive ? ' active' : ''}" onclick="openGroup('${g.id}')">
+      ${groupAvatarHTML(g)}
+      <div class="conv-info">
+        <div class="conv-name">${g.name}</div>
+        <div class="conv-preview">${last ? getUsername(last.from).split(' ')[0]+': '+last.text.slice(0,22)+(last.text.length>22?'…':'') : 'Group created!'}</div>
+      </div>
+      ${last ? `<div class="conv-time">${fmtTime(last.ts)}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ─── CHAT ─────────────────────────────────────────────────────────────
+function openDM(dmId) {
+  currentChat = { type: 'dm', id: dmId };
+  setActiveNav(null);
+  renderSidebar();
+  const dm = DB.dms.find(d => d.id === dmId);
+  const otherId = dm.users.find(u => u !== currentUser.id);
+  const other = getUser(otherId);
+  renderChatView(other.name, `${areFriends(currentUser.id, otherId) ? '🟢 Friend' : 'Direct message'}`, dm.messages, false);
+}
+
+function openGroup(groupId) {
+  currentChat = { type: 'group', id: groupId };
+  setActiveNav(null);
+  renderSidebar();
+  const g = DB.groups.find(gr => gr.id === groupId);
+  const memberNames = g.members.map(id => getUser(id)?.name.split(' ')[0]).join(', ');
+  renderChatView(g.name, `${g.members.length} members: ${memberNames}`, g.messages, true);
+}
+
+function renderChatView(name, sub, messages, isGroup) {
+  const mp = $('main-panel');
+  mp.innerHTML = `
+    <div class="chat-header">
+      <div>
+        <div class="chat-header-name">${name}</div>
+        <div class="chat-header-sub">${sub}</div>
+      </div>
+    </div>
+    <div class="messages-area" id="msg-area">${renderMessages(messages)}</div>
+    <div class="input-area">
+      <div class="input-box">
+        <input id="msg-input" type="text" placeholder="Message ${name}…" onkeydown="handleMsgKey(event)">
+        <button class="send-btn" id="send-btn" onclick="sendMessage()" title="Send">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>`;
+  scrollToBottom();
+  $('msg-input').focus();
+}
+
+function renderMessages(messages) {
+  if (!messages.length) return `<div class="welcome"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><p>No messages yet. Say something!</p></div>`;
+  let html = '';
+  let lastFrom = null;
+  messages.forEach(msg => {
+    const mine = msg.from === currentUser.id;
+    const showHeader = lastFrom !== msg.from;
+    html += `<div class="msg-${mine ? 'mine' : 'other'} msg-group">
+      ${showHeader && !mine ? `<div class="msg-header"><span class="msg-author" style="color:${getUser(msg.from)?.color}">${getUsername(msg.from)}</span><span class="msg-time">${fmtTime(msg.ts)}</span></div>` : ''}
+      ${showHeader && mine ? `<div class="msg-header"><span class="msg-time">${fmtTime(msg.ts)}</span></div>` : ''}
+      <div class="msg-bubble">${escHtml(msg.text)}</div>
+    </div>`;
+    lastFrom = msg.from;
+  });
+  return html;
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function handleMsgKey(e) { if (e.key === 'Enter') sendMessage(); }
+
+function sendMessage() {
+  const input = $('msg-input');
+  const text = input.value.trim();
+  if (!text || !currentChat) return;
+  input.value = '';
+  const newMsg = { id: `m${Date.now()}`, from: currentUser.id, text, ts: Date.now() };
+  if (currentChat.type === 'dm') {
+    const dm = DB.dms.find(d => d.id === currentChat.id);
+    dm.messages.push(newMsg);
+    openDM(currentChat.id);
+  } else {
+    const g = DB.groups.find(gr => gr.id === currentChat.id);
+    g.messages.push(newMsg);
+    openGroup(currentChat.id);
+  }
+}
+
+function scrollToBottom() {
+  setTimeout(() => {
+    const area = $('msg-area');
+    if (area) area.scrollTop = area.scrollHeight;
+  }, 30);
+}
+
+// ─── PANELS ──────────────────────────────────────────────────────────
+function setActiveNav(panel) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (panel) {
+    const el = $('nav-' + panel);
+    if (el) el.classList.add('active');
+  }
+}
+
+function showPanel(panel) {
+  currentPanel = panel;
+  currentChat = null;
+  renderSidebar();
+  setActiveNav(panel);
+  if (panel === 'friends') renderFriendsPanel();
+  else if (panel === 'explore') renderExplorePanel();
+  else if (panel === 'profile') renderProfilePanel();
+}
+
+// FRIENDS PANEL
+function renderFriendsPanel() {
+  const pending = getPendingRequests();
+  const myFriends = DB.friends
+    .filter(f => f.users.includes(currentUser.id))
+    .map(f => f.users.find(u => u !== currentUser.id))
+    .map(getUser).filter(Boolean);
+
+  const mp = $('main-panel');
+  mp.innerHTML = `<div class="panel">
+    <h2>Friends</h2>
+    <p class="panel-sub">Manage your connections and friend requests.</p>
+    <div class="panel-tabs">
+      <div class="panel-tab active" id="tab-all" onclick="showFriendsTab('all')">All Friends (${myFriends.length})</div>
+      <div class="panel-tab" id="tab-pending" onclick="showFriendsTab('pending')">Requests ${pending.length > 0 ? `<span class="badge" style="margin-left:6px">${pending.length}</span>` : ''}</div>
+    </div>
+    <div id="friends-tab-content"></div>
+  </div>`;
+  showFriendsTab('all');
+}
+
+function showFriendsTab(tab) {
+  document.querySelectorAll('.panel-tab').forEach(t => {
+    t.classList.toggle('active', t.id === `tab-${tab}`);
+  });
+  const el = $('friends-tab-content');
+  const myFriendIds = DB.friends
+    .filter(f => f.users.includes(currentUser.id))
+    .map(f => f.users.find(u => u !== currentUser.id));
+  const myFriends = myFriendIds.map(getUser).filter(Boolean);
+  const pending = getPendingRequests();
+
+  if (tab === 'all') {
+    if (!myFriends.length) {
+      el.innerHTML = `<div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <p>No friends yet. Find people to add!</p>
+        <button class="btn btn-primary btn-sm" onclick="showPanel('explore')">Find People ↗</button>
+      </div>`;
+      return;
+    }
+    el.innerHTML = myFriends.map(u => `
+      <div class="user-card">
+        ${avatarHTML(u.id, 'lg')}
+        <div class="user-card-info">
+          <div class="user-card-name">${u.name}</div>
+          <div class="user-card-meta">@${u.username} · <span class="tag tag-green">Friend</span></div>
+        </div>
+        <div class="user-card-actions">
+          <button class="btn btn-primary btn-sm" onclick="startDM('${u.id}')">Message</button>
+          <button class="btn btn-danger btn-sm" onclick="removeFriend('${u.id}')">Remove</button>
+        </div>
+      </div>`).join('');
+  } else {
+    const sent = DB.friendRequests.filter(r => r.from === currentUser.id && r.status === 'pending');
+    if (!pending.length && !sent.length) {
+      el.innerHTML = `<div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <p>No pending requests.</p>
+      </div>`;
+      return;
+    }
+    let html = '';
+    if (pending.length) {
+      html += `<div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">Incoming</div>`;
+      html += pending.map(r => {
+        const from = getUser(r.from);
+        return `<div class="user-card">
+          ${avatarHTML(from.id, 'lg')}
+          <div class="user-card-info">
+            <div class="user-card-name">${from.name}</div>
+            <div class="user-card-meta">@${from.username} wants to be your friend</div>
+          </div>
+          <div class="user-card-actions">
+            <button class="btn btn-success btn-sm" onclick="acceptFriend('${r.id}')">Accept</button>
+            <button class="btn btn-danger btn-sm" onclick="declineFriend('${r.id}')">Decline</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+    if (sent.length) {
+      html += `<hr class="divider"><div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">Sent</div>`;
+      html += sent.map(r => {
+        const to = getUser(r.to);
+        return `<div class="user-card">
+          ${avatarHTML(to.id, 'lg')}
+          <div class="user-card-info">
+            <div class="user-card-name">${to.name}</div>
+            <div class="user-card-meta">@${to.username} · <span class="tag tag-amber">Pending</span></div>
+          </div>
+          <div class="user-card-actions">
+            <button class="btn btn-ghost btn-sm" onclick="cancelRequest('${r.id}')">Cancel</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+    el.innerHTML = html;
+  }
+}
+
+function acceptFriend(reqId) {
+  const req = DB.friendRequests.find(r => r.id === reqId);
+  req.status = 'accepted';
+  DB.friends.push({ users: [req.from, req.to] });
+  showToast(`You are now friends with ${getUsername(req.from)}!`);
+  renderFriendsPanel(); renderSidebar();
+}
+
+function declineFriend(reqId) {
+  const req = DB.friendRequests.find(r => r.id === reqId);
+  req.status = 'declined';
+  renderFriendsPanel(); renderSidebar();
+}
+
+function cancelRequest(reqId) {
+  DB.friendRequests = DB.friendRequests.filter(r => r.id !== reqId);
+  renderFriendsPanel(); renderSidebar();
+}
+
+function removeFriend(uid) {
+  DB.friends = DB.friends.filter(f => !(f.users.includes(currentUser.id) && f.users.includes(uid)));
+  showToast(`Removed from friends.`);
+  renderFriendsPanel(); renderSidebar();
+}
+
+function startDM(uid) {
+  const dm = getOrCreateDM(currentUser.id, uid);
+  renderSidebar();
+  openDM(dm.id);
+}
+
+// EXPLORE PANEL
+function renderExplorePanel() {
+  const mp = $('main-panel');
+  mp.innerHTML = `<div class="panel">
+    <h2>Find People</h2>
+    <p class="panel-sub">Search for users and send friend requests.</p>
+    <div class="search-bar">
+      <input id="search-input" type="text" placeholder="Search by name or username…" oninput="runSearch()">
+    </div>
+    <div id="search-results"></div>
+  </div>`;
+  runSearch();
+}
+
+function runSearch() {
+  const q = ($('search-input')?.value || '').toLowerCase().trim();
+  const el = $('search-results');
+  if (!el) return;
+  const results = DB.users.filter(u => u.id !== currentUser.id &&
+    (!q || u.name.toLowerCase().includes(q) || u.username.toLowerCase().includes(q)));
+  if (!results.length) {
+    el.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><p>No users found.</p></div>`;
+    return;
+  }
+  el.innerHTML = results.map(u => {
+    const friend = areFriends(currentUser.id, u.id);
+    const pendingOut = DB.friendRequests.find(r => r.from === currentUser.id && r.to === u.id && r.status === 'pending');
+    const pendingIn = DB.friendRequests.find(r => r.from === u.id && r.to === currentUser.id && r.status === 'pending');
+    let actionHTML = '';
+    if (friend) {
+      actionHTML = `<button class="btn btn-primary btn-sm" onclick="startDM('${u.id}')">Message</button>`;
+    } else if (pendingOut) {
+      actionHTML = `<span class="tag tag-amber">Request sent</span><button class="btn btn-ghost btn-sm" onclick="cancelRequest('${pendingOut.id}');runSearch()">Cancel</button>`;
+    } else if (pendingIn) {
+      actionHTML = `<button class="btn btn-success btn-sm" onclick="acceptFriend('${pendingIn.id}');runSearch()">Accept request</button>`;
+    } else {
+      actionHTML = `<button class="btn btn-primary btn-sm" onclick="sendFriendRequest('${u.id}')">Add friend</button>`;
+    }
+    return `<div class="user-card">
+      ${avatarHTML(u.id, 'lg')}
+      <div class="user-card-info">
+        <div class="user-card-name">${u.name}</div>
+        <div class="user-card-meta">@${u.username} ${friend ? '· <span class="tag tag-green">Friend</span>' : ''}</div>
+      </div>
+      <div class="user-card-actions">${actionHTML}</div>
+    </div>`;
+  }).join('');
+}
+
+function sendFriendRequest(toId) {
+  const exists = DB.friendRequests.find(r => r.from === currentUser.id && r.to === toId && r.status === 'pending');
+  if (exists) return;
+  DB.friendRequests.push({ id: `fr${Date.now()}`, from: currentUser.id, to: toId, status: 'pending' });
+  showToast(`Friend request sent to ${getUsername(toId)}!`);
+  renderSidebar(); runSearch();
+}
+
+// PROFILE PANEL
+function renderProfilePanel() {
+  const u = currentUser;
+  const initials = u.name.split(' ').map(w => w[0]).join('').slice(0,2);
+  const myFriends = DB.friends.filter(f => f.users.includes(u.id)).length;
+  const myGroups = DB.groups.filter(g => g.members.includes(u.id)).length;
+  const mp = $('main-panel');
+  mp.innerHTML = `<div class="panel">
+    <h2>Profile</h2>
+    <p class="panel-sub">Your account information.</p>
+    <div style="display:flex;align-items:center;gap:18px;background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:20px 22px;margin-bottom:20px">
+      <div class="avatar xl" style="background:${u.color}20;color:${u.color}">${initials}</div>
+      <div>
+        <div style="font-size:18px;font-weight:600">${u.name}</div>
+        <div style="color:var(--text2);font-size:13px;margin-top:2px">@${u.username}</div>
+        <div style="display:flex;gap:12px;margin-top:10px">
+          <span class="tag tag-accent">${myFriends} friends</span>
+          <span class="tag tag-green">${myGroups} groups</span>
+        </div>
+      </div>
+    </div>
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px 18px;">
+      <div style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Account</div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+        <span style="color:var(--text2);font-size:13px">Display name</span>
+        <span style="font-size:13px;font-weight:500">${u.name}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0">
+        <span style="color:var(--text2);font-size:13px">Username</span>
+        <span style="font-size:13px;font-weight:500;font-family:'DM Mono',monospace">@${u.username}</span>
+      </div>
+    </div>
+    <div style="margin-top:20px">
+      <button class="btn btn-danger" onclick="logout()">Sign out</button>
+    </div>
+  </div>`;
+}
+
+// GROUP MODAL
+function openNewGroupModal() {
+  const myFriendIds = DB.friends
+    .filter(f => f.users.includes(currentUser.id))
+    .map(f => f.users.find(u => u !== currentUser.id));
+  const myFriends = myFriendIds.map(getUser).filter(Boolean);
+  if (!myFriends.length) { showToast('Add some friends first to create a group!'); return; }
+  $('group-name-input').value = '';
+  $('group-member-list').innerHTML = myFriends.map(u =>
+    `<label class="member-checkbox">
+      <input type="checkbox" value="${u.id}" id="mc-${u.id}">
+      ${avatarHTML(u.id)}
+      <span style="font-size:13px;font-weight:500">${u.name}</span>
+    </label>`
+  ).join('');
+  $('group-modal').style.display = 'block';
+}
+
+function closeGroupModal() { $('group-modal').style.display = 'none'; }
+
+function createGroup() {
+  const name = $('group-name-input').value.trim();
+  if (!name) { showToast('Please enter a group name.'); return; }
+  const checked = [...document.querySelectorAll('#group-member-list input:checked')].map(i => i.value);
+  if (!checked.length) { showToast('Select at least one member.'); return; }
+  const colors = ['#7c6af7','#3ecf74','#f7a234','#f75a5a','#5ab8f7','#e55fc5'];
+  const newGroup = {
+    id: `g${Date.now()}`, name,
+    members: [currentUser.id, ...checked],
+    color: colors[DB.groups.length % colors.length],
+    messages: []
+  };
+  DB.groups.push(newGroup);
+  closeGroupModal();
+  renderSidebar();
+  showToast(`Group "${name}" created!`);
+  openGroup(newGroup.id);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────
+// Enter key for auth
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    if ($('login-form').style.display !== 'none') login();
+    else if ($('register-form').style.display !== 'none') register();
+  }
+});
+</script>
+</body>
+</html>
